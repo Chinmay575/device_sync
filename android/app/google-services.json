@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "231125159714",
+    "project_id": "dev-sync-872",
+    "storage_bucket": "dev-sync-872.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:231125159714:android:bbe7ceb21509e5e0521f7b",
+        "android_client_info": {
+          "package_name": "com.example.connect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD-C6h-k5ayDP7NbS17K-rSO2Kkic8Jmn4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

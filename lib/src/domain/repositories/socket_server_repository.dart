@@ -60,9 +60,17 @@ class SocketServer implements _SocketServer {
         String message = .fromCharCodes(data);
         print(message);
 
+        List<String> m = message.split('\n');
+
         try {
-          final json = jsonDecode(message);
-          _controller.add(json);
+          for (var i in m) {
+            if (i.isEmpty) continue;
+            if (i.startsWith('\n')) {
+              i = i.replaceAll('\n', '');
+            }
+            final json = jsonDecode(i);
+            _controller.add(json);
+          }
         } catch (e) {
           debugPrint("Error parsing JSON: $e");
         }

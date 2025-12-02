@@ -86,8 +86,6 @@ extension EnumParser<T extends Enum> on Iterable<T> {
   }
 }
 
-enum MouseEvent { MOVE, SCROLL, CLICK }
+enum MouseEventType { MOVE, SCROLL, CLICK }
 
-enum RemoteInputEvent { MOUSE, KEYBOARD }
-
-// enum KeyboardEvent {}
+enum RemoteInputType { MOUSE, KEYBOARD }

@@ -106,3 +106,23 @@ class LinuxMediaCommandPacket implements MediaPacket {
     };
   }
 }
+
+class RemoteInputPacket implements Packet {
+  dynamic data;
+
+  @override
+  Event event;
+
+  RemoteInputType inputType;
+
+  RemoteInputPacket({
+    required this.data,
+    required this.event,
+    required this.inputType,
+  });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {'data': data, 'event': event.name, 'inputType': inputType.name};
+  }
+}

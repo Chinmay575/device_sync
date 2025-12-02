@@ -33,6 +33,8 @@ class SocketClient implements _SocketClient {
       print("Send packet called ${_temp}");
       socket?.write('${jsonEncode(_temp)}\n');
 
+      socket?.setOption(SocketOption.tcpNoDelay, true);
+
       socket?.listen(
         (data) {
           final message = String.fromCharCodes(data);

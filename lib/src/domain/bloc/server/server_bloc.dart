@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:bixat_key_mouse/bixat_key_mouse.dart';
 import 'package:bloc/bloc.dart';
 import 'package:connect/src/data/models/connect_req.dart';
 import 'package:connect/src/data/models/connect_res.dart';
@@ -195,7 +196,39 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
                 }
               }
             case Event.REMOTE_INPUT:
-            // handle all cases
+              RemoteInputType? inputType = RemoteInputType.values.parse(
+                data["inputType"],
+              );
+
+              if (inputType == .MOUSE) {
+                MouseEventType? mouseEventType = MouseEventType.values.parse(
+                  data["data"]["type"],
+                );
+
+                if (mouseEventType == .MOVE) {
+                  num? dx = data["data"]["dx"];
+                  num? dy = data["data"]["dy"];
+                  BixatKeyMouse.moveMouse(
+                    x: (dx ?? 0).toInt(),
+                    y: (dy ?? 0).toInt(),
+                    coordinate: Coordinate.relative,
+                  );
+                } else if (mouseEventType == .CLICK) {
+                  String? btn = data["data"]["btn"];
+
+                  MouseButton? button = MouseButton.values.parse(
+                    btn?.toLowerCase() ?? "",
+                  );
+                  if (button != null) {
+                    BixatKeyMouse.pressMouseButton(button: button);
+                  }
+                }
+
+                print("parsed mouse event ${mouseEventType}");
+              }
+
+              print("parsed type $inputType");
+              print(data["data"]);
           }
         } else {
           debugPrint("Unknown Event ${data["event"]}");

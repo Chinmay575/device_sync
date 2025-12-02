@@ -7,6 +7,7 @@ import 'package:connect/src/data/models/device.dart';
 import 'package:connect/src/data/models/handshake_req.dart';
 import 'package:connect/src/data/models/handshake_res.dart';
 import 'package:connect/src/data/models/packet.dart';
+import 'package:connect/src/data/models/remote_input.dart';
 import 'package:connect/src/domain/repositories/clipboard_repository.dart';
 import 'package:connect/src/domain/repositories/device_repository.dart';
 import 'package:connect/src/domain/repositories/local_data_repository.dart';
@@ -32,6 +33,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     on<HandshakeEvent>(onHandshakeEvent);
     on<SyncClipboard>(onClipboardSync);
     on<MediaEvent>(onMediaEvent);
+    on<RemoteInputEvent>(onRemoteInputEvent);
   }
 
   onHandshakeEvent(HandshakeEvent event, Emitter<ClientState> emit) async {
@@ -187,5 +189,18 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     } else {
       print("No prev connection found");
     }
+  }
+
+  FutureOr<void> onRemoteInputEvent(
+    RemoteInputEvent<dynamic> event,
+    Emitter<ClientState> emit,
+  ) {
+    RemoteInputPacket packet = .new(
+      data: event.data,
+      event: .REMOTE_INPUT,
+      inputType: event.type,
+    );
+
+    _client.sendPacket(packet);
   }
 }

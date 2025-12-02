@@ -46,3 +46,13 @@ class MediaEvent<T> extends ClientEvent {
   @override
   List<Object?> get props => [data, command];
 }
+
+class RemoteInputEvent<T> extends ClientEvent {
+  final RemoteInputType type;
+  final T data;
+
+  const RemoteInputEvent({required this.type, required this.data});
+
+  @override
+  List<Object?> get props => [type, data];
+}

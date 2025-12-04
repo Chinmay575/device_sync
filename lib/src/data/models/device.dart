@@ -1,16 +1,26 @@
+import 'package:connect/src/utils/constants/strings/enums.dart';
+
+import '../../domain/bloc/client/client_bloc.dart';
+
 class Device {
   String ip;
   String port;
   String deviceName;
   String model;
-  bool isServer;
+  DevicePlatform platform;
+  ConnectionStatus status;
+  String? secret;
+  bool get isServer =>
+      platform == .linux || platform == .windows || platform == .mac;
 
   Device({
-    required this.isServer,
+    required this.platform,
     required this.ip,
     required this.port,
     required this.deviceName,
     required this.model,
+    this.secret,
+    this.status = .INITIAL,
   });
 
   Device copyWith({
@@ -18,14 +28,18 @@ class Device {
     String? port,
     String? deviceName,
     String? model,
-    bool? isServer,
+    DevicePlatform? platform,
+    ConnectionStatus? status,
+    String? secret,
   }) {
     return Device(
-      isServer: isServer ?? this.isServer,
+      platform: platform ?? this.platform,
       ip: ip ?? this.ip,
       port: port ?? this.port,
       deviceName: deviceName ?? this.deviceName,
       model: model ?? this.model,
+      status: status ?? this.status,
+      secret: secret ?? this.secret,
     );
   }
 
@@ -35,13 +49,14 @@ class Device {
       'port': port,
       'deviceName': deviceName,
       'model': model,
-      'isServer': isServer,
+      'platform': platform.name,
     };
   }
 
   factory Device.fromMap(Map<String, dynamic> map) {
     return Device(
-      isServer: map['isServer'],
+      platform:
+          DevicePlatform.values.parse(map['platform'] as String) ?? .unknown,
       ip: map['ip'],
       port: map['port'],
       deviceName: map['deviceName'],

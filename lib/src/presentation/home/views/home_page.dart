@@ -77,53 +77,50 @@ class _Media extends StatelessWidget {
                 mainAxisSize: .min,
                 children: [
                   _buildPlayerSelector(state, context),
-                  Container(
-                    // color: Colors.amber,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          flex: 1,
-                          child: Image.network(
-                            buildImageArt(state),
-                            height: 100,
-                            width: 100,
-                            errorBuilder: (_, __, ___) {
-                              return Icon(Icons.image);
-                            },
-                          ),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: Image.network(
+                          buildImageArt(state),
+                          height: 100,
+                          width: 100,
+                          errorBuilder: (_, __, ___) {
+                            return Icon(Icons.image);
+                          },
                         ),
-                        SizedBox(width: 16),
-                        Expanded(
-                          flex: 4,
-                          child: Column(
-                            crossAxisAlignment: .start,
-                            children: [
-                              Text(
-                                state.mediaState?.currentMedia.title ?? "",
-                                softWrap: true,
-                                maxLines: 2,
-                                overflow: .ellipsis,
-                                textAlign: .start,
-                              ),
-                              Text(
-                                state.mediaState?.currentMedia.album ?? "",
-                                softWrap: true,
-                                maxLines: 2,
-                                overflow: .ellipsis,
-                                textAlign: .start,
-                              ),
-                              Text(
-                                state.mediaState?.currentMedia.artist ?? "",
-                                softWrap: true,
-                                maxLines: 2,
-                                overflow: .ellipsis,
-                                textAlign: .start,
-                              ),
-                            ],
-                          ),
+                      ),
+                      SizedBox(width: 16),
+                      Expanded(
+                        flex: 4,
+                        child: Column(
+                          crossAxisAlignment: .start,
+                          children: [
+                            Text(
+                              state.mediaState?.currentMedia.title ?? "",
+                              softWrap: true,
+                              maxLines: 2,
+                              overflow: .ellipsis,
+                              textAlign: .start,
+                            ),
+                            Text(
+                              state.mediaState?.currentMedia.album ?? "",
+                              softWrap: true,
+                              maxLines: 2,
+                              overflow: .ellipsis,
+                              textAlign: .start,
+                            ),
+                            Text(
+                              state.mediaState?.currentMedia.artist ?? "",
+                              softWrap: true,
+                              maxLines: 2,
+                              overflow: .ellipsis,
+                              textAlign: .start,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 16),
                   Row(
@@ -320,7 +317,7 @@ class _Media extends StatelessWidget {
   }
 
   String buildImageArt(ClientState state) {
-    String ip = state.connectedDevices.firstOrNull?.ip ?? "";
+    String ip = state.server?.device.ip ?? "";
     String path = state.mediaState?.currentMedia.artUrl ?? "";
     if (path.contains('0.0.0.0')) {
       path = path.replaceAll("0.0.0.0", ip);
@@ -336,7 +333,8 @@ class _Devices extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ServerBloc, ServerState>(
       builder: (_, state) {
-        if (state is ServerReady && (state.currentDevice?.isServer ?? false)) {
+        if (state is ServerReady &&
+            (state.currentDevice?.device.isServer ?? false)) {
           return Column(
             crossAxisAlignment: .start,
             mainAxisSize: .min,
@@ -349,7 +347,7 @@ class _Devices extends StatelessWidget {
                   separatorBuilder: (_, __) => SizedBox(width: 16.w),
                   scrollDirection: .horizontal,
                   itemBuilder: (_, i) {
-                    Device device = state.devices[i];
+                    Device device = state.devices[i].device;
                     return SizedBox(
                       height: 160,
                       width: 160,
@@ -439,7 +437,7 @@ class _ConnectionDialog extends StatelessWidget {
           padding: .symmetric(horizontal: 16, vertical: 20),
           child: BlocBuilder<ClientBloc, ClientState>(
             builder: (context, state) {
-              if (state.status == ClientConnectionStatus.INITIAL) {
+              if (state.server == null) {
                 return Column(
                   crossAxisAlignment: .start,
                   mainAxisSize: .min,
@@ -475,10 +473,10 @@ class _ConnectionDialog extends StatelessWidget {
               return Column(
                 mainAxisSize: .min,
                 children: [
-                  Text("Connection Status ${state.status.name}"),
-                  Text(state.connectedDevices.firstOrNull?.deviceName ?? ""),
-                  Text(state.connectedDevices.firstOrNull?.model ?? ""),
-                  Text(state.connectedDevices.firstOrNull?.ip ?? ""),
+                  Text("Connection Status ${state.server?.device.status.name}"),
+                  Text(state.server?.device.deviceName ?? ""),
+                  Text(state.server?.device.model ?? ""),
+                  Text(state.server?.device.ip ?? ""),
                 ],
               );
             },

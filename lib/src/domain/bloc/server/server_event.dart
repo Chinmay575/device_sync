@@ -9,6 +9,16 @@ class Initial extends ServerEvent {
   List<Object?> get props => [];
 }
 
+class RecieveEvent extends ServerEvent {
+  final DeviceConnection device;
+  final Map<String, dynamic> data;
+
+  const RecieveEvent({required this.device, required this.data});
+
+  @override
+  List<Object?> get props => [device, data];
+}
+
 class ClipboardSync extends ServerEvent {
   @override
   List<Object?> get props => [];
@@ -16,5 +26,5 @@ class ClipboardSync extends ServerEvent {
 
 class MediaSync extends ServerEvent {
   @override
-  List<Object?> get props => throw UnimplementedError();
+  List<Object?> get props => [];
 }

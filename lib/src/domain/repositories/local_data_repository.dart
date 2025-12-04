@@ -45,7 +45,7 @@ class LocalDataRepository implements _LocalDataRepository {
   Future<void> set<T>(String key, T value) async {
     if (T == String) {
       bool? a = await _prefs?.setString(key, value as String);
-      print("data saved ${key} ${a}");
+      print("data saved $key $a");
     } else if (T == int) {
       await _prefs?.setInt(key, value as int);
     } else if (T == double) {

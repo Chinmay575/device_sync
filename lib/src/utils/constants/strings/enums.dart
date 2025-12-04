@@ -11,6 +11,7 @@ enum Event {
   MEDIA_DATA_SEND,
   MEDIA_COMMAND,
   REMOTE_INPUT,
+  DISCONNECT,
 }
 
 enum Functionality {
@@ -45,7 +46,8 @@ enum DevicePlatform {
   mac,
   linux,
   web,
-  windows;
+  windows,
+  unknown;
 
   Widget get icon {
     switch (this) {
@@ -61,6 +63,8 @@ enum DevicePlatform {
         return Brand(Brands.chrome);
       case windows:
         return Brand(Brands.windows_11);
+      case unknown:
+        return Icon(Icons.laptop);
     }
   }
 }

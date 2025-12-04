@@ -532,10 +532,10 @@ packages:
     dependency: "direct main"
     description:
       name: playerctl
-      sha256: "241156e3daa8b039578a1743738086b626ae5b15c94801e32fa21bd5148d073a"
+      sha256: d7ba627991def9e9dd68ba94d2a395b806ff9bccfeff59f8b62a06b3087e4a5b
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.1.1"
   plugin_platform_interface:
     dependency: transitive
     description:

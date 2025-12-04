@@ -8,6 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../domain/bloc/client/client_bloc.dart';
 
 class RemoteInputPage extends StatefulWidget {
+  const RemoteInputPage({super.key});
+
   @override
   State<RemoteInputPage> createState() => _RemoteInputPageState();
 }
@@ -65,7 +67,7 @@ class _RemoteInputPageState extends State<RemoteInputPage>
       body: Column(
         mainAxisSize: .min,
         children: [
-          Container(
+          SizedBox(
             height: 40,
             child: TabBar(
               isScrollable: false,
@@ -147,36 +149,32 @@ class _TrackPadTabState extends State<TrackPadTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanUpdate: _onPanUpdate,
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onPanUpdate: _onPanUpdate,
 
-        onTap: () {
-          Map<String, dynamic> d = {
-            'type': MouseEventType.CLICK.name,
-            'btn': 'LEFT',
-          };
+      onTap: () {
+        Map<String, dynamic> d = {
+          'type': MouseEventType.CLICK.name,
+          'btn': 'LEFT',
+        };
 
+        context.read<ClientBloc>().add(RemoteInputEvent(data: d, type: .MOUSE));
+      },
+      onLongPress: () {
+        HapticFeedback.mediumImpact(); // Give feedback
+        Map<String, dynamic> d = {
+          'type': MouseEventType.CLICK.name,
+          'btn': 'RIGHT',
+        };
+
+        Future.delayed(Duration.zero, () {
           context.read<ClientBloc>().add(
             RemoteInputEvent(data: d, type: .MOUSE),
           );
-        },
-        onLongPress: () {
-          HapticFeedback.mediumImpact(); // Give feedback
-          Map<String, dynamic> d = {
-            'type': MouseEventType.CLICK.name,
-            'btn': 'RIGHT',
-          };
-
-          Future.delayed(Duration.zero, () {
-            context.read<ClientBloc>().add(
-              RemoteInputEvent(data: d, type: .MOUSE),
-            );
-          });
-        },
-        child: Center(child: Text("Move your finger to move the mouse cursor")),
-      ),
+        });
+      },
+      child: Center(child: Text("Move your finger to move the mouse cursor")),
     );
   }
 }

@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:io';
-
+import 'dart:math';
 import 'package:bixat_key_mouse/bixat_key_mouse.dart';
 import 'package:bloc/bloc.dart';
 import 'package:connect/src/data/models/connect_req.dart';
 import 'package:connect/src/data/models/connect_res.dart';
 import 'package:connect/src/data/models/device.dart';
+import 'package:connect/src/data/models/device_connection.dart';
+import 'package:connect/src/data/models/disconnect_req.dart';
 import 'package:connect/src/data/models/handshake_req.dart';
 import 'package:connect/src/data/models/handshake_res.dart';
 import 'package:connect/src/data/models/packet.dart';
@@ -31,6 +33,7 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
     on<Initial>(onInitialEvent);
     on<ClipboardSync>(onClipboardSync);
     on<MediaSync>(onMediaSync);
+    on<RecieveEvent>(onRecieveEvent);
   }
 
   onInitialEvent(Initial event, Emitter<ServerState> emit) async {
@@ -40,200 +43,31 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
 
     await _socketServer.start(device, port: ServerConfig.PORT);
 
+    DeviceConnection connection = .new(device: device, socket: null);
+
     emit(
       ServerReady(
         serverIP: _socketServer.ip,
         port: _socketServer.port.toString(),
-        currentDevice: device,
+        currentDevice: connection,
       ),
     );
 
     await emit.forEach(
-      _socketServer.dataStream,
-      onData: (data) {
-        print(data.runtimeType);
+      _socketServer.deviceStream,
+      onData: (newDevice) {
+        newDevice.events.listen((data) {
+          add(RecieveEvent(device: newDevice, data: data));
+        });
 
-        Event? event = .values.parse((data['event'] ?? "") as String);
-
-        if (event != null) {
-          switch (event) {
-            case .HANDSHAKE_REQ:
-              HandshakeReq req = .fromMap(data["data"]);
-
-              if (state.devices
-                  .where((e) => e.ip == req.device.ip)
-                  .isNotEmpty) {
-                HandshakeRes res = .new(
-                  status: 0,
-                  msg: "Device already connected",
-                );
-                _socketServer.sendPacket(
-                  EventPacket(data: res.toMap(), event: .HANDSHAKE_RES),
-                );
-              } else {
-                HandshakeRes res = .new(status: 1, secret: "1234");
-                _socketServer.sendPacket(
-                  EventPacket(data: res.toMap(), event: .HANDSHAKE_RES),
-                );
-              }
-
-              break;
-
-            case .CONNECT_REQ:
-              ConnectReq req = .fromMap(data["data"]);
-              ConnectRes res;
-
-              bool isAlreadyConnected = state.devices
-                  .where((e) => e.ip == req.device.ip)
-                  .isNotEmpty;
-
-              if (req.secret == "1234" && !isAlreadyConnected) {
-                res = .new(
-                  status: 1,
-                  device: device,
-                  msg: "Connected Successfully",
-                );
-                _socketServer.sendPacket(
-                  EventPacket(data: res.toMap(), event: .CONNECT_RES),
-                );
-
-                add(ClipboardSync());
-                add(MediaSync());
-
-                List<Device> devices = [...state.devices];
-                devices.add(req.device);
-
-                if (state is ServerReady) {
-                  return (state as ServerReady).copyWith(devices: devices);
-                } else {
-                  return ServerReady(
-                    serverIP: _socketServer.ip,
-                    port: _socketServer.port.toString(),
-                    devices: devices,
-                    currentDevice: device,
-                  );
-                }
-              } else {
-                String reason = "";
-                if (req.secret != "1234") {
-                  reason = "Incorrect Secret Key";
-                } else if (isAlreadyConnected) {
-                  reason = "Device already connected";
-                } else {
-                  reason = "Unknown reason";
-                }
-                res = .new(
-                  status: 0,
-                  device: device,
-                  msg: "Connection failed due to $reason",
-                );
-
-                _socketServer.sendPacket(
-                  EventPacket(data: res.toMap(), event: .CONNECT_RES),
-                );
-              }
-
-              break;
-            case .CONNECT_RES:
-            case .HANDSHAKE_RES:
-              print("Server cannot recieve handshake res");
-              break;
-            case Event.CLIPBOARD_SEND:
-              _clipboardService.setClipboard(data["data"] as String);
-            case Event.MEDIA_DATA_SEND:
-              break;
-            case Event.MEDIA_COMMAND:
-              DevicePlatform? platform = .values.parse(
-                data["platform"] as String,
-              );
-              if (platform == .linux) {
-                MediaCommand? command = .values.parse(
-                  data["command"] as String,
-                );
-                if (command != null) {
-                  switch (command) {
-                    case .PLAY:
-                      mediaPlayerManager.play();
-                      break;
-                    case .PAUSE:
-                      mediaPlayerManager.pause();
-                      break;
-                    case .SHUFFLE:
-                      mediaPlayerManager.updateShuffleStatus();
-                      break;
-                    case .LOOP:
-                      mediaPlayerManager.updateLoopStatus();
-                      break;
-                    case .NEXT:
-                      mediaPlayerManager.next();
-                      break;
-                    case .PREV:
-                      mediaPlayerManager.previous();
-                      break;
-                    case .PLAYER:
-                      if (data["data"] is String) {
-                        mediaPlayerManager.switchPlayer(data["data"]);
-                      } else {
-                        debugPrint(
-                          "Incorrect data type in player switch ${data["data"]}",
-                        );
-                      }
-                      break;
-                    case .SEEK:
-                      break;
-                    case .VOLUME:
-                      if (data["data"] is num) {
-                        mediaPlayerManager.setVolume(
-                          (data["data"] as num).toInt(),
-                        );
-                      } else {
-                        debugPrint(
-                          "Incorrect data type in set  volume ${data["data"]}",
-                        );
-                      }
-                      break;
-                  }
-                }
-              }
-            case Event.REMOTE_INPUT:
-              RemoteInputType? inputType = RemoteInputType.values.parse(
-                data["inputType"],
-              );
-
-              if (inputType == .MOUSE) {
-                MouseEventType? mouseEventType = MouseEventType.values.parse(
-                  data["data"]["type"],
-                );
-
-                if (mouseEventType == .MOVE) {
-                  num? dx = data["data"]["dx"];
-                  num? dy = data["data"]["dy"];
-                  BixatKeyMouse.moveMouse(
-                    x: (dx ?? 0).toInt(),
-                    y: (dy ?? 0).toInt(),
-                    coordinate: Coordinate.relative,
-                  );
-                } else if (mouseEventType == .CLICK) {
-                  String? btn = data["data"]["btn"];
-
-                  MouseButton? button = MouseButton.values.parse(
-                    btn?.toLowerCase() ?? "",
-                  );
-                  if (button != null) {
-                    BixatKeyMouse.pressMouseButton(button: button);
-                  }
-                }
-
-                print("parsed mouse event ${mouseEventType}");
-              }
-
-              print("parsed type $inputType");
-              print(data["data"]);
-          }
-        } else {
-          debugPrint("Unknown Event ${data["event"]}");
+        final list = List<DeviceConnection>.from(
+          (state as ServerReady).devices,
+        );
+        if (list.where((e) => e.device.ip == newDevice.device.ip).isEmpty) {
+          newDevice.startListening();
+          list.add(newDevice);
         }
-        return state;
+        return (state as ServerReady).copyWith(devices: list);
       },
     );
   }
@@ -248,7 +82,12 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
       _clipboardService.clipboardStream,
       onData: (data) {
         ClipBoardPacket packet = .new(data: data, event: .CLIPBOARD_SEND);
-        _socketServer.sendPacket(packet);
+
+        for (var i in state.devices) {
+          if (i.device.status == .CONNECT_SUCCESS) {
+            i.send(packet);
+          }
+        }
         return state;
       },
     );
@@ -266,12 +105,222 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
           if (data != prevPacket) {
             prevPacket = data;
             LinuxMediaPacket packet = .new(data: data, event: .MEDIA_DATA_SEND);
-            _socketServer.sendPacket(packet);
+
+            for (var i in state.devices) {
+              if (i.device.status == .CONNECT_SUCCESS) {
+                i.send(packet);
+              } else {
+                print(
+                  "skipping packet send to ${i.device.ip} ${i.device.status}",
+                );
+              }
+            }
+          } else {
+            print("same packet not syncing");
           }
 
           return state;
         },
       );
     }
+  }
+
+  FutureOr<void> onRecieveEvent(
+    RecieveEvent recieveEvent,
+    Emitter<ServerState> emit,
+  ) {
+    DeviceConnection device = recieveEvent.device;
+
+    Map<String, dynamic> data = recieveEvent.data;
+
+    debugPrint("${data.runtimeType}");
+
+    Event? event = .values.parse((data['event'] ?? "") as String);
+
+    if (event != null) {
+      switch (event) {
+        case .HANDSHAKE_REQ:
+          HandshakeReq req = .fromMap(data["data"]);
+
+          var rng = Random();
+
+          int secret = 100000 + rng.nextInt(900000);
+
+          List<DeviceConnection> devices = state.devices.map((e) {
+            if (e.device.ip == req.device.ip) {
+              return e.updateDevice(
+                platform: req.device.platform,
+                deviceName: req.device.deviceName,
+                model: req.device.model,
+                port: req.device.port,
+                status: .HANDSHAKE_SENT,
+                secret: secret.toString(),
+              );
+            }
+            return e;
+          }).toList();
+
+          HandshakeRes res = .new(status: 1, secret: secret.toString());
+          device.send(EventPacket(data: res.toMap(), event: .HANDSHAKE_RES));
+
+          emit((state as ServerReady).copyWith(devices: devices));
+
+          break;
+
+        case .CONNECT_REQ:
+          ConnectReq req = .fromMap(data["data"]);
+          ConnectRes res;
+
+          if (req.secret == device.device.secret) {
+            res = .new(
+              status: 1,
+              device: state.currentDevice?.device,
+              msg: "Connected Successfully",
+            );
+            device.send(EventPacket(data: res.toMap(), event: .CONNECT_RES));
+
+            add(ClipboardSync());
+            add(MediaSync());
+
+            emit(
+              (state as ServerReady).copyWith(
+                devices: state.devices.map((e) {
+                  if (e.device.ip == req.device.ip) {
+                    return e.updateDevice(
+                      status: .CONNECT_SUCCESS,
+                      deviceName: req.device.deviceName,
+                      model: req.device.model,
+                      platform: req.device.platform,
+                    );
+                  }
+                  return e;
+                }).toList(),
+              ),
+            );
+          } else {
+            String reason = "";
+            if (req.secret != device.device.secret) {
+              reason = "Incorrect Secret Key";
+            } else {
+              reason = "Unknown reason";
+            }
+            res = .new(
+              status: 0,
+              device: device.device,
+              msg: "Connection failed due to $reason",
+            );
+
+            device.send(EventPacket(data: res.toMap(), event: .CONNECT_RES));
+          }
+
+          break;
+        case .CONNECT_RES:
+        case .HANDSHAKE_RES:
+          debugPrint("Server cannot recieve handshake res");
+          break;
+        case Event.CLIPBOARD_SEND:
+          _clipboardService.setClipboard(data["data"] as String);
+          break;
+        case Event.MEDIA_DATA_SEND:
+          break;
+        case Event.MEDIA_COMMAND:
+          DevicePlatform? platform = .values.parse(data["platform"] as String);
+          if (platform == .linux) {
+            MediaCommand? command = .values.parse(data["command"] as String);
+            if (command != null) {
+              switch (command) {
+                case .PLAY:
+                  mediaPlayerManager.play();
+                  break;
+                case .PAUSE:
+                  mediaPlayerManager.pause();
+                  break;
+                case .SHUFFLE:
+                  mediaPlayerManager.updateShuffleStatus();
+                  break;
+                case .LOOP:
+                  mediaPlayerManager.updateLoopStatus();
+                  break;
+                case .NEXT:
+                  mediaPlayerManager.next();
+                  break;
+                case .PREV:
+                  mediaPlayerManager.previous();
+                  break;
+                case .PLAYER:
+                  if (data["data"] is String) {
+                    mediaPlayerManager.switchPlayer(data["data"]);
+                  } else {
+                    debugPrint(
+                      "Incorrect data type in player switch ${data["data"]}",
+                    );
+                  }
+                  break;
+                case .SEEK:
+                  break;
+                case .VOLUME:
+                  if (data["data"] is num) {
+                    mediaPlayerManager.setVolume((data["data"] as num).toInt());
+                  } else {
+                    debugPrint(
+                      "Incorrect data type in set  volume ${data["data"]}",
+                    );
+                  }
+                  break;
+              }
+            }
+          }
+          break;
+        case Event.REMOTE_INPUT:
+          RemoteInputType? inputType = RemoteInputType.values.parse(
+            data["inputType"],
+          );
+
+          if (inputType == .MOUSE) {
+            MouseEventType? mouseEventType = MouseEventType.values.parse(
+              data["data"]["type"],
+            );
+
+            if (mouseEventType == .MOVE) {
+              num? dx = data["data"]["dx"];
+              num? dy = data["data"]["dy"];
+              BixatKeyMouse.moveMouse(
+                x: (dx ?? 0).toInt(),
+                y: (dy ?? 0).toInt(),
+                coordinate: Coordinate.relative,
+              );
+            } else if (mouseEventType == .CLICK) {
+              String? btn = data["data"]["btn"];
+
+              MouseButton? button = MouseButton.values.parse(
+                btn?.toLowerCase() ?? "",
+              );
+              if (button != null) {
+                BixatKeyMouse.pressMouseButton(button: button);
+              }
+            }
+
+            debugPrint("parsed mouse event $mouseEventType");
+          }
+
+          debugPrint("parsed type $inputType");
+          // debugPrint(data["data"]);
+          break;
+        case Event.DISCONNECT:
+          DisconnectReq req = .fromMap(data);
+
+          state.devices
+              .where((e) => e.device.ip == req.device.ip)
+              .firstOrNull
+              ?.dispose();
+
+          state.devices.removeWhere((e) => e.device.ip == req.device.ip);
+
+          emit((state as ServerReady).copyWith(devices: state.devices));
+      }
+    } else {
+      debugPrint("Unknown Event ${data["event"]}");
+    }
+    emit(state);
   }
 }

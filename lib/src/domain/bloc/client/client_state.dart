@@ -2,31 +2,32 @@ part of 'client_bloc.dart';
 
 class ClientState extends Equatable {
   const ClientState({
-    this.status = .INITIAL,
-    this.connectedDevices = const [],
+    // this.connectedDevices = const [],
     this.mediaState,
+    this.server,
   });
-  final ClientConnectionStatus status;
-  final List<Device> connectedDevices;
+
+  // final List<Device> connectedDevices;
+  final DeviceConnection? server;
   final PlayerState? mediaState;
 
   @override
-  List<Object?> get props => [connectedDevices, status, mediaState];
+  List<Object?> get props => [server, mediaState];
 
   ClientState copyWith({
-    ClientConnectionStatus? status,
-    List<Device>? connectedDevices,
+    // List<Device>? connectedDevices,
     PlayerState? mediaState,
+    DeviceConnection? device,
   }) {
     return ClientState(
-      status: status ?? this.status,
-      connectedDevices: connectedDevices ?? this.connectedDevices,
+      // connectedDevices: connectedDevices ?? this.connectedDevices,
       mediaState: mediaState ?? this.mediaState,
+      server: device ?? server,
     );
   }
 }
 
-enum ClientConnectionStatus {
+enum ConnectionStatus {
   INITIAL,
   HANDSHAKE_SENT,
   HANDSHAKE_SUCCESS,

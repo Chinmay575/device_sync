@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:connect/src/data/models/device.dart';
+import 'package:connect/src/utils/constants/strings/enums.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 abstract class _DeviceRepository {
@@ -31,31 +32,37 @@ class DeviceRepository implements _DeviceRepository {
 
     String deviceName = "";
     String deviceModel = "";
+    DevicePlatform platform = .unknown;
 
     if (Platform.isAndroid) {
       AndroidDeviceInfo deviceInfo = await info.androidInfo;
       deviceName = deviceInfo.device;
       deviceModel = deviceInfo.model;
+      platform = .android;
     } else if (Platform.isIOS) {
       IosDeviceInfo deviceInfo = await info.iosInfo;
       deviceName = deviceInfo.systemName;
       deviceModel = deviceInfo.model;
+      platform = .ios;
     } else if (Platform.isMacOS) {
       MacOsDeviceInfo deviceInfo = await info.macOsInfo;
       deviceName = deviceInfo.computerName;
       deviceModel = deviceInfo.model;
+      platform = .mac;
     } else if (Platform.isWindows) {
       WindowsDeviceInfo deviceInfo = await info.windowsInfo;
       deviceName = deviceInfo.computerName;
       deviceModel = deviceInfo.productName;
+      platform = .windows;
     } else if (Platform.isLinux) {
       LinuxDeviceInfo deviceInfo = await info.linuxInfo;
       deviceName = deviceInfo.name;
       deviceModel = deviceInfo.prettyName;
+      platform = .linux;
     }
 
     Device device = Device(
-      isServer: Platform.isLinux || Platform.isWindows || Platform.isMacOS,
+      platform: platform,
       ip: ip ?? "",
       port: "0",
       deviceName: deviceName,

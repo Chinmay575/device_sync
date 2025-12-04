@@ -4,8 +4,8 @@ part of 'server_bloc.dart';
 sealed class ServerState extends Equatable {
   final String serverIP;
   final String port;
-  final Device? currentDevice;
-  final List<Device> devices;
+  final DeviceConnection? currentDevice;
+  final List<DeviceConnection> devices;
 
   const ServerState({
     required this.serverIP,
@@ -38,8 +38,8 @@ class ServerReady extends ServerState {
   ServerReady copyWith({
     String? serverIP,
     String? port,
-    List<Device>? devices,
-    Device? currentDevice,
+    List<DeviceConnection>? devices,
+    DeviceConnection? currentDevice,
   }) {
     return ServerReady(
       serverIP: serverIP ?? this.serverIP,

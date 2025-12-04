@@ -56,3 +56,13 @@ class RemoteInputEvent<T> extends ClientEvent {
   @override
   List<Object?> get props => [type, data];
 }
+
+class RecieveEvent extends ClientEvent {
+  final Device device;
+  final Map<String, dynamic> data;
+
+  const RecieveEvent({required this.device, required this.data});
+
+  @override
+  List<Object?> get props => [device, data];
+}

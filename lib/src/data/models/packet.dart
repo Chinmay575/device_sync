@@ -108,6 +108,7 @@ class LinuxMediaCommandPacket implements MediaPacket {
 }
 
 class RemoteInputPacket implements Packet {
+  @override
   dynamic data;
 
   @override

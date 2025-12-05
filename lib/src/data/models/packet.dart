@@ -1,4 +1,5 @@
-import 'package:connect/src/domain/bloc/client/client_bloc.dart';
+import 'package:connect/src/data/models/notification_data.dart';
+import 'package:connect/src/data/models/notification_reply.dart';
 import 'package:connect/src/utils/constants/strings/enums.dart';
 import 'package:playerctl/core/player_state.dart';
 
@@ -126,4 +127,75 @@ class RemoteInputPacket implements Packet {
   Map<String, dynamic> toMap() {
     return {'data': data, 'event': event.name, 'inputType': inputType.name};
   }
+}
+
+class NotificationPacket<T> implements Packet<T> {
+  NotificationPacket({required this.data, this.event = .NOTIFICATION_SYNC});
+
+  @override
+  T data;
+
+  @override
+  Event event;
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {'data': data, 'event': event.name};
+  }
+}
+
+class AndroidNotificationPacket
+    implements NotificationPacket<NotificationData> {
+  @override
+  NotificationData data;
+
+  AndroidNotificationPacket({
+    this.event = .NOTIFICATION_SYNC,
+    required this.data,
+  });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {'data': data.toMap(), 'event': event.name};
+  }
+
+  @override
+  Event event;
+}
+
+class AndroidNotificationRemovePacket implements NotificationPacket<int?> {
+  @override
+  int? data;
+
+  AndroidNotificationRemovePacket({
+    this.event = .NOTIFICATION_CLOSE,
+    required this.data,
+  });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {'data': data, 'event': event.name};
+  }
+
+  @override
+  Event event;
+}
+
+class AndroidNotificationReplyPacket
+    implements NotificationPacket<NotificationReply> {
+  @override
+  NotificationReply data;
+
+  AndroidNotificationReplyPacket({
+    this.event = .NOTIFICATION_REPLY,
+    required this.data,
+  });
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {'data': data.toMap(), 'event': event.name};
+  }
+
+  @override
+  Event event;
 }

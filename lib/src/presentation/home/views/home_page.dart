@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:connect/src/data/models/device.dart';
 import 'package:connect/src/domain/bloc/client/client_bloc.dart';
 import 'package:connect/src/domain/bloc/server/server_bloc.dart';
+import 'package:connect/src/presentation/home/views/desktop_home_page.dart';
 import 'package:connect/src/utils/constants/strings/enums.dart';
 import 'package:connect/src/utils/constants/strings/server_config.dart';
 import 'package:flutter/foundation.dart';
@@ -24,6 +25,9 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
+    if (Platform.isLinux || Platform.isWindows || Platform.isMacOS) {
+      return DesktopHomePage();
+    }
     return Scaffold(
       appBar: AppBar(
         actions: [
@@ -62,7 +66,7 @@ class _Media extends StatelessWidget {
     return BlocConsumer<ClientBloc, ClientState>(
       listener: (context, state) {},
       builder: (context, state) {
-        print(state.mediaState);
+        // print(state.mediaState);
 
         if (state.mediaState == null) {
           return SizedBox.shrink();
@@ -418,7 +422,15 @@ class _CustomGridTile extends StatelessWidget {
         child: Card(
           elevation: 4,
           margin: .zero,
-          child: Center(child: Text(functionality.name)),
+          child: Column(
+            crossAxisAlignment: .center,
+            mainAxisAlignment: .center,
+            children: [
+              Icon(functionality.icon, size: 32),
+              SizedBox(height: 12),
+              Text(functionality.Name),
+            ],
+          ),
         ),
       ),
     );
@@ -495,7 +507,7 @@ class _ConnectionDialog extends StatelessWidget {
   final TextEditingController ipController = .new();
 
   Widget builder(ServerState state) {
-    print(state.runtimeType);
+    // print(state.runtimeType);
     if (state is ServerReady) {
       return Container(
         padding: .all(16),

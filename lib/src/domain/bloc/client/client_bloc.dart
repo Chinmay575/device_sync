@@ -7,16 +7,22 @@ import 'package:connect/src/data/models/device.dart';
 import 'package:connect/src/data/models/device_connection.dart';
 import 'package:connect/src/data/models/handshake_req.dart';
 import 'package:connect/src/data/models/handshake_res.dart';
+import 'package:connect/src/data/models/notification_reply.dart';
 import 'package:connect/src/data/models/packet.dart';
 import 'package:connect/src/domain/repositories/clipboard_repository.dart';
 import 'package:connect/src/domain/repositories/device_repository.dart';
 import 'package:connect/src/domain/repositories/local_data_repository.dart';
+import 'package:connect/src/domain/repositories/notification_listener_repository.dart';
+import 'package:connect/src/domain/repositories/notification_repository.dart';
 import 'package:connect/src/domain/repositories/socket_client_repository.dart';
 import 'package:connect/src/utils/constants/strings/enums.dart';
 import 'package:connect/src/utils/constants/strings/pref_keys.dart';
 import 'package:connect/src/utils/constants/strings/server_config.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:notification_listener_service/notification_event.dart';
+import 'package:notification_listener_service/notification_listener_service.dart'
+    show NotificationListenerService;
 import 'package:playerctl/core/player_state.dart';
 
 part 'client_event.dart';
@@ -27,6 +33,9 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
   final ClipboardService _clipboardService = .instance;
   final LocalDataRepository _localData = .instance;
   final DeviceRepository deviceRepository = .new();
+  final NotificationListenerRepository _notificationListenerRepository =
+      .instance;
+  final NotificationRepository _notificationRepository = .instance;
   ClientBloc() : super(ClientState()) {
     on<CheckPrevConnection>(onCheckPrevConnection);
     on<ConnectEvent>(onConnectEvent);
@@ -35,6 +44,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     on<MediaEvent>(onMediaEvent);
     on<RemoteInputEvent>(onRemoteInputEvent);
     on<RecieveEvent>(onRecieveEvent);
+    on<NotificationSyncEvent>(onNotificationSyncEvent);
   }
 
   onHandshakeEvent(HandshakeEvent event, Emitter<ClientState> emit) async {
@@ -67,13 +77,13 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
         add(RecieveEvent(device: connection.device, data: data));
       });
     } on Exception catch (e, stk) {
-      print(stk);
+      debugPrint("$stk");
       emit(
         state.copyWith(device: state.server?.updateDevice(status: .INITIAL)),
       );
 
       if (event.port == ServerConfig.PORT) {
-        print("Retry called with next port");
+        debugPrint("Retry called with next port");
         add(event.copyWith(port: event.port + 1));
       }
     }
@@ -87,7 +97,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
         ),
       );
     } on Exception catch (e) {
-      print(e);
+      debugPrint("$e");
       emit(
         state.copyWith(
           device: state.server?.updateDevice(status: .CONNECT_FAILED),
@@ -129,11 +139,11 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     Emitter<ClientState> emit,
   ) {
     String? ip = _localData.get<String>(PrefKeys.serverIP);
-    print("saved ip ${ip}");
+    debugPrint("saved ip $ip");
     if (ip?.isNotEmpty ?? false) {
       add(HandshakeEvent(ip: ip ?? "", port: ServerConfig.PORT));
     } else {
-      print("No prev connection found");
+      debugPrint("No prev connection found");
     }
   }
 
@@ -158,7 +168,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
 
     Device device = recieveEvent.device;
 
-    print("Packet received ${data}, ${data.runtimeType}");
+    debugPrint("Packet received $data, ${data.runtimeType}");
 
     Event? event = .values.parse((data['event'] ?? "") as String);
 
@@ -171,10 +181,13 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
           ConnectRes res = .fromMap(data["data"]);
 
           if (res.status == 1) {
-            print(
+            debugPrint(
               "-------------------------------Connection success----------------------------------------------",
             );
             add(SyncClipboard());
+            add(NotificationSyncEvent());
+
+            _notificationListenerRepository.getAllNotifications();
 
             _localData.set<String>(PrefKeys.serverIP, res.device?.ip ?? "");
 
@@ -195,7 +208,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
         case .HANDSHAKE_RES:
           HandshakeRes res = .fromMap(data["data"]);
 
-          print(res.status);
+          // debugPrint(res.status);
 
           if (res.status == 1) {
             ConnectReq req = .new(device: device, secret: res.secret ?? "");
@@ -227,18 +240,55 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
             emit(state.copyWith(mediaState: playerState));
           }
           break;
-        case Event.MEDIA_COMMAND:
+        case .MEDIA_COMMAND:
           emit(state);
           break;
-        case Event.REMOTE_INPUT:
+        case .REMOTE_INPUT:
           emit(state);
           break;
-        case Event.DISCONNECT:
+        case .DISCONNECT:
           emit(ClientState());
           break;
+        case .NOTIFICATION_SYNC:
+          break;
+        case .NOTIFICATION_CLOSE:
+          int? id = data["data"];
+          if (id == null) {
+            _notificationRepository.cancelAll();
+          } else {
+            _notificationRepository.cancel(id);
+          }
+          break;
+        case Event.NOTIFICATION_REPLY:
+          NotificationReply reply = .fromMap(data["data"]);
+          Future.delayed(Duration.zero, () async {
+            List<ServiceNotificationEvent> e =
+                await NotificationListenerService.getActiveNotifications();
+
+            ServiceNotificationEvent? notificationEvent = e
+                .where((e) => e.id == reply.id)
+                .firstOrNull;
+
+            await notificationEvent?.sendReply(reply.reply);
+          });
       }
     } else {
       debugPrint("Unknown Event ${data["event"]}");
     }
+  }
+
+  FutureOr<void> onNotificationSyncEvent(
+    NotificationSyncEvent event,
+    Emitter<ClientState> emit,
+  ) async {
+    await emit.forEach(
+      _notificationListenerRepository.notificationStream,
+      onData: (data) {
+        AndroidNotificationPacket packet = .new(data: data);
+
+        state.server?.send(packet);
+        return state;
+      },
+    );
   }
 }

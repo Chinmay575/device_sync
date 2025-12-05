@@ -59,6 +59,12 @@ dependencies:
   playerctl: ^1.1.1
 #  flutter_webrtc: ^1.2.1
   bixat_key_mouse: ^1.0.3
+  notification_listener_service:
+    git:
+      url: git@github.com:Chinmay575/notification_listener_service.git
+      ref: 2c0697c0e42f7253bf1bc4b99662e75cbd4d4e98
+  flutter_local_notifications: ^19.5.0
+  firebase_messaging:
 
 dev_dependencies:
   flutter_test:

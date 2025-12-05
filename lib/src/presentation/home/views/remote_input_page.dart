@@ -169,9 +169,11 @@ class _TrackPadTabState extends State<TrackPadTab> {
         };
 
         Future.delayed(Duration.zero, () {
-          context.read<ClientBloc>().add(
-            RemoteInputEvent(data: d, type: .MOUSE),
-          );
+          if (context.mounted) {
+            context.read<ClientBloc>().add(
+              RemoteInputEvent(data: d, type: .MOUSE),
+            );
+          }
         });
       },
       child: Center(child: Text("Move your finger to move the mouse cursor")),

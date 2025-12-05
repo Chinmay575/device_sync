@@ -5,13 +5,10 @@ import 'package:connect/src/utils/constants/strings/enums.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 
 abstract class _DeviceRepository {
-  Future<String?> _getLocalIP();
-
   Future<Device> getDeviceInfo();
 }
 
 class DeviceRepository implements _DeviceRepository {
-  @override
   Future<String?> _getLocalIP() async {
     List<NetworkInterface> interfaces = await NetworkInterface.list();
 

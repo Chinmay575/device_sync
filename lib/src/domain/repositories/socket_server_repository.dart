@@ -36,8 +36,8 @@ class SocketServer implements _SocketServer {
       _serverSocket = await .bind(InternetAddress.anyIPv4, port);
       debugPrint('Server started on port: $port');
       _serverSocket?.listen((Socket client) {
-        print("Connection from ${client.address}");
-        final device = Device(
+        debugPrint("Connection from ${client.address}");
+        final d = Device(
           ip: client.remoteAddress.address,
           platform: .unknown,
           port: client.port.toString(),
@@ -45,7 +45,7 @@ class SocketServer implements _SocketServer {
           model: '',
         );
 
-        DeviceConnection connection = .new(device: device, socket: client);
+        DeviceConnection connection = .new(device: d, socket: client);
 
         _deviceStream.add(connection);
       });

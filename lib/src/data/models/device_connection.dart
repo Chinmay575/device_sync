@@ -1,28 +1,57 @@
+// ignore_for_file: must_be_immutable
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:connect/src/data/models/device.dart';
 import 'package:connect/src/data/models/disconnect_req.dart';
+import 'package:connect/src/data/models/notification_data.dart';
 import 'package:connect/src/data/models/packet.dart';
-import 'package:connect/src/domain/bloc/client/client_bloc.dart';
 import 'package:connect/src/utils/constants/strings/enums.dart';
+import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
-class DeviceConnection {
-  // 1. The Mutable State (The Device Model)
-  Device device;
+class DeviceConnection extends Equatable {
+  // --- DATA (Immutable State) ---
+  final Device device;
+  final List<NotificationData> notifications;
 
-  // 2. The Active Connection
+  // --- LOGIC (Connection Handles) ---
+  // These are excluded from 'props' but preserved during copyWith
   final Socket? socket;
-  final StreamController<Map<String, dynamic>> _eventController =
-      StreamController.broadcast();
+  final StreamController<Map<String, dynamic>> _eventController;
+
+  // _sub must be mutable because startListening() is called after initialization
   StreamSubscription? _sub;
 
-  DeviceConnection({required this.device, this.socket});
+  // --- CONSTRUCTORS ---
 
-  // 3. Expose Stream
+  // 1. Private Constructor: Used internally by copyWith to preserve connection state
+  DeviceConnection._internal({
+    required this.device,
+    required this.notifications,
+    required this.socket,
+    required StreamController<Map<String, dynamic>> controller,
+    this.connectionSubscription,
+  }) : _eventController = controller,
+       _sub = connectionSubscription;
+
+  // 2. Public Constructor: Used when first creating the connection
+  DeviceConnection({required this.device, this.socket})
+    : notifications = const [],
+      _eventController = StreamController.broadcast(),
+      _sub = null,
+      connectionSubscription = null;
+
+  // Temporary holder for the subscription when copying
+  final StreamSubscription? connectionSubscription;
+
+  // --- GETTERS ---
   Stream<Map<String, dynamic>> get events => _eventController.stream;
 
-  // 4. Lifecycle Methods
+  // --- LOGIC METHODS ---
+
   void startListening() {
     if (_sub != null) return; // Already listening
 
@@ -36,7 +65,7 @@ class DeviceConnection {
             try {
               _eventController.add(jsonDecode(line));
             } catch (e) {
-              print("Parse Error: $e");
+              debugPrint("Parse Error: $e");
             }
           },
           onDone: () => _handleDisconnect(),
@@ -45,13 +74,31 @@ class DeviceConnection {
   }
 
   void send(Packet packet) {
+    debugPrint("send packet called ${packet.data}");
     try {
       socket?.write('${jsonEncode(packet.toMap())}\n');
     } catch (e) {
-      print("Send Error: $e");
+      debugPrint("Send Error: $e");
     }
   }
 
+  void _handleDisconnect() {
+    DisconnectReq req = DisconnectReq(device: device);
+    if (!_eventController.isClosed) {
+      _eventController.add(req.toMap());
+    }
+    dispose();
+  }
+
+  void dispose() {
+    _sub?.cancel();
+    if (!_eventController.isClosed) _eventController.close();
+    socket?.destroy();
+  }
+
+  // --- STATE UPDATE METHODS (CopyWith Pattern) ---
+
+  /// Creates a NEW instance with updated Device data
   DeviceConnection updateDevice({
     String? ip,
     String? port,
@@ -61,27 +108,67 @@ class DeviceConnection {
     ConnectionStatus? status,
     String? secret,
   }) {
-    device = device.copyWith(
-      ip: ip,
-      port: port,
-      deviceName: deviceName,
-      model: model,
-      platform: platform,
-      status: status,
-      secret: secret,
+    return DeviceConnection._internal(
+      // Create new Device model
+      device: device.copyWith(
+        ip: ip,
+        port: port,
+        deviceName: deviceName,
+        model: model,
+        platform: platform,
+        status: status,
+        secret: secret,
+      ),
+      // Keep existing Data/Logic
+      notifications: notifications,
+      socket: socket,
+      controller: _eventController,
+      connectionSubscription: _sub,
     );
-    return this;
   }
 
-  void _handleDisconnect() {
-    DisconnectReq req = DisconnectReq(device: device);
-    _eventController.add(req.toMap());
-    dispose();
+  /// Creates a NEW instance with a NEW list containing the notification
+  DeviceConnection updateNotifications(NotificationData event) {
+    // Avoid duplicates if necessary
+    if (notifications.any(
+      (e) => e.id == event.id && e.content == event.content,
+    )) {
+      return this;
+    }
+
+    return DeviceConnection._internal(
+      device: device,
+      // Create a NEW List reference (Crucial for BLoC rebuilds)
+      notifications: List.from(notifications)..add(event),
+      // Keep existing Logic
+      socket: socket,
+      controller: _eventController,
+      connectionSubscription: _sub,
+    );
   }
 
-  void dispose() {
-    _sub?.cancel();
-    _eventController.close();
-    socket?.destroy();
+  DeviceConnection removeNotification(int? id) {
+    // Avoid duplicates if necessary
+    if (id == null) {
+      notifications.clear();
+    } else {
+      notifications.removeWhere((e) => e.id == id);
+    }
+
+    return DeviceConnection._internal(
+      device: device,
+      // Create a NEW List reference (Crucial for BLoC rebuilds)
+      notifications: List.from(notifications),
+      // Keep existing Logic
+      socket: socket,
+      controller: _eventController,
+      connectionSubscription: _sub,
+    );
   }
+
+  // --- EQUATABLE ---
+  // Only check 'device' and 'notifications'.
+  // Ignore socket/streams for equality checks so rebuilds are pure.
+  @override
+  List<Object?> get props => [device, notifications];
 }

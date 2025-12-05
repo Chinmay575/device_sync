@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 abstract class _LocalDataRepository {
@@ -38,14 +39,14 @@ class LocalDataRepository implements _LocalDataRepository {
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
 
-    print(_prefs?.getKeys());
+    // print(_prefs?.getKeys());
   }
 
   @override
   Future<void> set<T>(String key, T value) async {
     if (T == String) {
       bool? a = await _prefs?.setString(key, value as String);
-      print("data saved $key $a");
+      debugPrint("data saved $key $a");
     } else if (T == int) {
       await _prefs?.setInt(key, value as int);
     } else if (T == double) {

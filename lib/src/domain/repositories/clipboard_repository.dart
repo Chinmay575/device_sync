@@ -48,7 +48,7 @@ class ClipboardService with ClipboardListener {
   void _checkForChange(String? newText) {
     if (newText != null && newText.isNotEmpty && newText != _lastClipboard) {
       _lastClipboard = newText;
-      print("checking for clip $newText");
+      // print("checking for clip $newText");
       _clipboardController.add(newText);
     }
   }

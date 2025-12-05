@@ -28,3 +28,35 @@ class MediaSync extends ServerEvent {
   @override
   List<Object?> get props => [];
 }
+
+class NotificationClose extends ServerEvent {
+  final DeviceConnection device;
+  final int? id;
+
+  const NotificationClose({required this.id, required this.device});
+
+  @override
+  List<Object?> get props => [id];
+}
+
+class NotificationReplyEvent implements NotificationClose {
+  NotificationReplyEvent({
+    required this.id,
+    required this.device,
+    required this.reply,
+  });
+
+  final String reply;
+
+  @override
+  List<Object?> get props => [id, device, reply];
+
+  @override
+  final DeviceConnection device;
+
+  @override
+  final int id;
+
+  @override
+  bool? get stringify => false;
+}

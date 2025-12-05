@@ -66,3 +66,8 @@ class RecieveEvent extends ClientEvent {
   @override
   List<Object?> get props => [device, data];
 }
+
+class NotificationSyncEvent extends ClientEvent {
+  @override
+  List<Object?> get props => [];
+}

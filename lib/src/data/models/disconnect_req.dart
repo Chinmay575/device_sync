@@ -1,5 +1,4 @@
 import 'package:connect/src/data/models/device.dart';
-import 'package:connect/src/data/models/device_connection.dart';
 import 'package:connect/src/utils/constants/strings/enums.dart';
 
 class DisconnectReq {

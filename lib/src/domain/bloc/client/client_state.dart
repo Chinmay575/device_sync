@@ -26,14 +26,3 @@ class ClientState extends Equatable {
     );
   }
 }
-
-enum ConnectionStatus {
-  INITIAL,
-  HANDSHAKE_SENT,
-  HANDSHAKE_SUCCESS,
-  HANDSHAKE_FAILED,
-  CONNECT_SENT,
-  CONNECT_SUCCESS,
-  CONNECT_FAILED,
-  DISCONNECT,
-}

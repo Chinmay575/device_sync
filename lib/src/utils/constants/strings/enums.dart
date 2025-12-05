@@ -12,6 +12,9 @@ enum Event {
   MEDIA_COMMAND,
   REMOTE_INPUT,
   DISCONNECT,
+  NOTIFICATION_SYNC,
+  NOTIFICATION_CLOSE,
+  NOTIFICATION_REPLY,
 }
 
 enum Functionality {
@@ -20,7 +23,8 @@ enum Functionality {
   SCREEN_SHARE,
   REMOTE_COMMANDS,
   MEDIA_CONTROLS,
-  REMOTE_INPUT_SHARE;
+  REMOTE_INPUT_SHARE,
+  NOTIFICATION_SYNC;
 
   String get route {
     switch (this) {
@@ -36,7 +40,33 @@ enum Functionality {
         return "";
       case Functionality.REMOTE_INPUT_SHARE:
         return Routes.remoteInput;
+      case Functionality.NOTIFICATION_SYNC:
+        return "";
     }
+  }
+
+  BoxIconData get icon {
+    switch (this) {
+      case Functionality.FILE_TRANSFER:
+        return (BoxIcons.bx_file_blank);
+      case Functionality.CLIPBOARD_SYNC:
+        return (BoxIcons.bx_clipboard);
+      case Functionality.SCREEN_SHARE:
+        return (BoxIcons.bx_devices);
+      case Functionality.REMOTE_COMMANDS:
+        return (BoxIcons.bx_terminal);
+      case Functionality.MEDIA_CONTROLS:
+        return (BoxIcons.bx_music);
+      case Functionality.REMOTE_INPUT_SHARE:
+        return (BoxIcons.bx_mouse);
+      case Functionality.NOTIFICATION_SYNC:
+        return BoxIcons.bx_notification;
+    }
+  }
+
+  // ignore: non_constant_identifier_names
+  String get Name {
+    return name.replaceAll('_', ' ');
   }
 }
 
@@ -93,3 +123,14 @@ extension EnumParser<T extends Enum> on Iterable<T> {
 enum MouseEventType { MOVE, SCROLL, CLICK }
 
 enum RemoteInputType { MOUSE, KEYBOARD }
+
+enum ConnectionStatus {
+  INITIAL,
+  HANDSHAKE_SENT,
+  HANDSHAKE_SUCCESS,
+  HANDSHAKE_FAILED,
+  CONNECT_SENT,
+  CONNECT_SUCCESS,
+  CONNECT_FAILED,
+  DISCONNECT,
+}

@@ -1,19 +1,18 @@
 import 'package:connect/src/utils/constants/strings/enums.dart';
+import 'package:equatable/equatable.dart';
 
-import '../../domain/bloc/client/client_bloc.dart';
-
-class Device {
-  String ip;
-  String port;
-  String deviceName;
-  String model;
-  DevicePlatform platform;
-  ConnectionStatus status;
-  String? secret;
+class Device extends Equatable {
+  final String ip;
+  final String port;
+  final String deviceName;
+  final String model;
+  final DevicePlatform platform;
+  final ConnectionStatus status;
+  final String? secret;
   bool get isServer =>
       platform == .linux || platform == .windows || platform == .mac;
 
-  Device({
+  const Device({
     required this.platform,
     required this.ip,
     required this.port,
@@ -63,4 +62,15 @@ class Device {
       model: map['model'],
     );
   }
+
+  @override
+  List<Object?> get props => [
+    ip,
+    port,
+    deviceName,
+    model,
+    platform,
+    status,
+    secret,
+  ];
 }

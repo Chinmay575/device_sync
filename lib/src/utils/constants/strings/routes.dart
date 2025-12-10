@@ -4,4 +4,6 @@ class Routes {
   static String error = '/error';
 
   static String remoteInput = '/remoteInput';
+
+  static String remoteCommandExecution = '/remoteCommandExecution';
 }

@@ -104,48 +104,58 @@ class NotificationRepository implements _NotificationRepository {
     String? payload,
   }) async {
     // Android Details
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'connect_channel_id',
-          'Connect Notifications',
-          channelDescription: 'Notifications from connected devices',
-          importance: Importance.max,
-          priority: Priority.high,
-          ticker: 'ticker',
-        );
+    try {
+      const AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+            'connect_channel_id',
+            'Connect Notifications',
+            channelDescription: 'Notifications from connected devices',
+            importance: Importance.max,
+            priority: Priority.high,
+            ticker: 'ticker',
+          );
 
-    // iOS/macOS Details
-    const DarwinNotificationDetails darwinDetails = DarwinNotificationDetails(
-      presentSound: true,
-      presentBanner: true,
-      presentList: true,
-    );
+      // iOS/macOS Details
+      const DarwinNotificationDetails darwinDetails = DarwinNotificationDetails(
+        presentSound: true,
+        presentBanner: true,
+        presentList: true,
+      );
 
-    // Linux Details
-    final LinuxNotificationDetails linuxDetails = LinuxNotificationDetails(
-      urgency: LinuxNotificationUrgency.normal,
-      icon: (icon != null)
-          ? ByteDataLinuxIcon(
-              LinuxRawIconData(data: icon, width: 32, height: 32),
-            )
-          : null,
-    );
+      // Linux Details
+      final LinuxNotificationDetails linuxDetails = LinuxNotificationDetails(
+        urgency: LinuxNotificationUrgency.normal,
+        icon: (icon != null)
+            ? ByteDataLinuxIcon(
+                LinuxRawIconData(
+                  data: icon,
+                  width: 32,
+                  height: 32,
+                  channels: 4,
+                  hasAlpha: true,
+                ),
+              )
+            : null,
+      );
 
-    // General Details
-    NotificationDetails notificationDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: darwinDetails,
-      macOS: darwinDetails,
-      linux: linuxDetails,
-    );
+      // General Details
+      NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: darwinDetails,
+        macOS: darwinDetails,
+        linux: linuxDetails,
+      );
 
-    await _flutterLocalNotificationsPlugin.show(
-      id,
-      title,
-      body,
-      notificationDetails,
-      payload: payload,
-    );
+      await _flutterLocalNotificationsPlugin.show(
+        id,
+        title,
+        body,
+        notificationDetails,
+        payload: payload,
+      );
+    } on Exception catch (e) {
+      print(e);
+    }
   }
 
   @override

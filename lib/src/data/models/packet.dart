@@ -199,3 +199,21 @@ class AndroidNotificationReplyPacket
   @override
   Event event;
 }
+
+class RemoteCommandPacket implements Packet<RemoteCommand> {
+  RemoteCommandPacket({
+    this.event = .REMOTE_COMMAND_EXECUTION,
+    required this.data,
+  });
+
+  @override
+  RemoteCommand data;
+
+  @override
+  Event event;
+
+  @override
+  Map<String, dynamic> toMap() {
+    return {'data': data.name, 'event': event.name};
+  }
+}

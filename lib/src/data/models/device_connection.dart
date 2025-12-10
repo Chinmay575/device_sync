@@ -74,7 +74,7 @@ class DeviceConnection extends Equatable {
   }
 
   void send(Packet packet) {
-    debugPrint("send packet called ${packet.data}");
+    // debugPrint("send packet called ${packet.data}");
     try {
       socket?.write('${jsonEncode(packet.toMap())}\n');
     } catch (e) {

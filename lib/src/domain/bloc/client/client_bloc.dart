@@ -11,6 +11,7 @@ import 'package:connect/src/data/models/notification_reply.dart';
 import 'package:connect/src/data/models/packet.dart';
 import 'package:connect/src/domain/repositories/clipboard_repository.dart';
 import 'package:connect/src/domain/repositories/device_repository.dart';
+import 'package:connect/src/domain/repositories/file_transfer_server_repository.dart';
 import 'package:connect/src/domain/repositories/local_data_repository.dart';
 import 'package:connect/src/domain/repositories/notification_listener_repository.dart';
 import 'package:connect/src/domain/repositories/notification_repository.dart';
@@ -35,6 +36,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
   final DeviceRepository deviceRepository = .new();
   final NotificationListenerRepository _notificationListenerRepository =
       .instance;
+  final MobileFileTransferRepository _mobileFileTransferRepository = .instance;
   final NotificationRepository _notificationRepository = .instance;
   ClientBloc() : super(ClientState()) {
     on<CheckPrevConnection>(onCheckPrevConnection);
@@ -45,6 +47,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
     on<RemoteInputEvent>(onRemoteInputEvent);
     on<RecieveEvent>(onRecieveEvent);
     on<NotificationSyncEvent>(onNotificationSyncEvent);
+    on<RemoteCommandExecute>(onRemoteCommandExecute);
   }
 
   onHandshakeEvent(HandshakeEvent event, Emitter<ClientState> emit) async {
@@ -186,6 +189,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
             );
             add(SyncClipboard());
             add(NotificationSyncEvent());
+            _mobileFileTransferRepository.start();
 
             _notificationListenerRepository.getAllNotifications();
 
@@ -247,6 +251,7 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
           emit(state);
           break;
         case .DISCONNECT:
+          _mobileFileTransferRepository.stop();
           emit(ClientState());
           break;
         case .NOTIFICATION_SYNC:
@@ -271,6 +276,8 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
 
             await notificationEvent?.sendReply(reply.reply);
           });
+        case .REMOTE_COMMAND_EXECUTION:
+          break;
       }
     } else {
       debugPrint("Unknown Event ${data["event"]}");
@@ -290,5 +297,14 @@ class ClientBloc extends Bloc<ClientEvent, ClientState> {
         return state;
       },
     );
+  }
+
+  FutureOr<void> onRemoteCommandExecute(
+    RemoteCommandExecute event,
+    Emitter<ClientState> emit,
+  ) {
+    RemoteCommandPacket packet = .new(data: event.command);
+
+    state.server?.send(packet);
   }
 }

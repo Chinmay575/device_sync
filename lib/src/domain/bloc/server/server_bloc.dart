@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:bixat_key_mouse/bixat_key_mouse.dart';
 import 'package:bloc/bloc.dart';
 import 'package:connect/src/data/models/connect_req.dart';
@@ -23,6 +24,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:playerctl/core/media_player_manager.dart';
 import 'package:playerctl/core/player_state.dart';
+import 'package:image/image.dart' as img;
 
 part 'server_event.dart';
 part 'server_state.dart';
@@ -31,7 +33,7 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
   final SocketServer _socketServer = .instance;
   final ClipboardService _clipboardService = .instance;
   final DeviceRepository _deviceRepository = .new();
-  final MediaPlayerManager mediaPlayerManager = .new();
+  final MediaPlayerManager mediaPlayerManager = .new(logLevel: .none);
   final NotificationRepository _notificationRepository = .instance;
   ServerBloc() : super(ServerInitial()) {
     on<Initial>(onInitialEvent);
@@ -116,13 +118,13 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
               if (i.device.status == .CONNECT_SUCCESS) {
                 i.send(packet);
               } else {
-                debugPrint(
-                  "skipping packet send to ${i.device.ip} ${i.device.status}",
-                );
+                // debugPrint(
+                //   "skipping packet send to ${i.device.ip} ${i.device.status}",
+                // );
               }
             }
           } else {
-            debugPrint("same packet not syncing");
+            // debugPrint("same packet not syncing");
           }
 
           return state;
@@ -139,7 +141,7 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
 
     Map<String, dynamic> data = recieveEvent.data;
 
-    debugPrint("${data.runtimeType}");
+    // debugPrint("${data.runtimeType}");
 
     Event? event = .values.parse((data['event'] ?? "") as String);
 
@@ -227,7 +229,7 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
           break;
         case .CONNECT_RES:
         case .HANDSHAKE_RES:
-          debugPrint("Server cannot recieve handshake res");
+          // debugPrint("Server cannot recieve handshake res");
           break;
         case .CLIPBOARD_SEND:
           _clipboardService.setClipboard(data["data"] as String);
@@ -262,9 +264,9 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
                   if (data["data"] is String) {
                     mediaPlayerManager.switchPlayer(data["data"]);
                   } else {
-                    debugPrint(
-                      "Incorrect data type in player switch ${data["data"]}",
-                    );
+                    // debugPrint(
+                    //   "Incorrect data type in player switch ${data["data"]}",
+                    // );
                   }
                   break;
                 case .SEEK:
@@ -273,9 +275,9 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
                   if (data["data"] is num) {
                     mediaPlayerManager.setVolume((data["data"] as num).toInt());
                   } else {
-                    debugPrint(
-                      "Incorrect data type in set  volume ${data["data"]}",
-                    );
+                    // debugPrint(
+                    //   "Incorrect data type in set  volume ${data["data"]}",
+                    // );
                   }
                   break;
               }
@@ -307,10 +309,10 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
               }
             }
 
-            debugPrint("parsed mouse event $mouseEventType");
+            // debugPrint("parsed mouse event $mouseEventType");
           }
 
-          debugPrint("parsed type $inputType");
+          // debugPrint("parsed type $inputType");
           // debugPrint(data["data"]);
           break;
         case .DISCONNECT:
@@ -327,11 +329,17 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
         case .NOTIFICATION_SYNC:
           NotificationData f = .fromMap(data["data"]);
 
+          Uint8List? icon;
+          if (f.appIcon != null) {
+            final img.Image? image = img.decodeImage(f.appIcon!);
+            icon = image?.buffer.asUint8List();
+          }
+
           _notificationRepository.show(
             id: f.id ?? 1234,
             title: f.title ?? "",
             body: f.content ?? "",
-            icon: f.appIcon,
+            icon: icon,
           );
 
           emit(
@@ -345,11 +353,25 @@ class ServerBloc extends Bloc<ServerEvent, ServerState> {
             ),
           );
 
-          debugPrint("Noification Recieved: $data");
+          // debugPrint("Noification Recieved: $data");
           break;
         case Event.NOTIFICATION_CLOSE:
           break;
         case Event.NOTIFICATION_REPLY:
+          break;
+        case Event.REMOTE_COMMAND_EXECUTION:
+          RemoteCommand? command = .values.parse(data["data"] as String);
+
+          if (command != null) {
+            List<String> c = command.command.split(',');
+            // print(c);
+            Future.delayed(.zero, () async {
+              ProcessResult res = await Process.run(c[0], [c[1]]);
+              debugPrint(
+                "Res from ${command.command} ${res.stdout} ${res.stderr}",
+              );
+            });
+          }
           break;
       }
     } else {

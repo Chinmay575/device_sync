@@ -5,6 +5,7 @@ import 'package:connect/src/domain/repositories/local_data_repository.dart';
 import 'package:connect/src/domain/bloc/client/client_bloc.dart';
 import 'package:connect/src/domain/repositories/notification_listener_repository.dart';
 import 'package:connect/src/domain/repositories/notification_repository.dart';
+import 'package:connect/src/presentation/home/views/remote_command_execution_page.dart';
 import 'package:connect/src/presentation/home/views/remote_input_page.dart';
 import 'package:connect/src/domain/bloc/server/server_bloc.dart';
 import 'package:flutter/material.dart';
@@ -39,6 +40,10 @@ class AppRouter {
   static List<AppRoute> _routes() => [
     .new(name: Routes.home, view: HomePage()),
     .new(name: Routes.remoteInput, view: RemoteInputPage()),
+    .new(
+      name: Routes.remoteCommandExecution,
+      view: RemoteCommandExecutionPage(),
+    ),
   ];
 
   static List allBlocProviders() => [

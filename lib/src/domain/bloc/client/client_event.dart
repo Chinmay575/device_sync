@@ -71,3 +71,10 @@ class NotificationSyncEvent extends ClientEvent {
   @override
   List<Object?> get props => [];
 }
+
+class RemoteCommandExecute extends ClientEvent {
+  final RemoteCommand command;
+  const RemoteCommandExecute({required this.command});
+  @override
+  List<Object?> get props => [command];
+}

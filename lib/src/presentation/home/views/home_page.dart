@@ -316,6 +316,9 @@ class _Media extends StatelessWidget {
     if (playerName?.contains("vlc") ?? false) {
       return Brand(Brands.vlc, size: 16);
     }
+    if (playerName?.contains("chrom") ?? false) {
+      return Brand(Brands.chrome, size: 16);
+    }
 
     return Icon(Icons.music_note, size: 16, color: Colors.white);
   }
@@ -485,7 +488,8 @@ class _ConnectionDialog extends StatelessWidget {
               return Column(
                 mainAxisSize: .min,
                 children: [
-                  Text("Connection Status ${state.server?.device.status.name}"),
+                  Icon(state.server?.device.status.icon),
+                  // Text("Connection Status ${state.server?.device.status.name}"),
                   Text(state.server?.device.deviceName ?? ""),
                   Text(state.server?.device.model ?? ""),
                   Text(state.server?.device.ip ?? ""),
